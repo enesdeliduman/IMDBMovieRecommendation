@@ -1,8 +1,66 @@
-﻿@{
+﻿@model List<ResultMovieDTO>
+@{
     ViewData["Title"] = "Home Page";
+    int count;
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+    <form asp-action="Refresh" asp-controller="Home" method="post">
+        <button type="submit">Yenile</button>
+    </form>
+
+    <div class="modal fade" id="movieModal" tabindex="-1" aria-labelledby="movieModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="movieModalLabel"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <img src="" id="movieImage" class="img-fluid">
+                    <form>
+                        <div class="form-floating my-3">
+                            <textarea class="form-control" placeholder="Yorumunuz" id="floatingTextarea"></textarea>
+                        </div>
+                        <div class="d-grid col-12 mx-auto">
+                            <input type="hidden" id="movieId" value="">
+                            <button class="btn btn-success" type="submit">İzledim</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container mt-5">
+        <div class="movies">
+            @foreach (var item in Model)
+            {
+                <div class="film-poster" data-movie-id="@item.MovieID" data-movietitle="@item.Title">
+                    <div class="badge">@item.Rating</div>
+                    <img src="@item.Image"/>
+                </div>
+            }
+        </div >
+    </div>
+</div >
+
+@section Scripts
+{
+    <script>
+        $(document).ready(function() {
+            $('.film-poster').click(function() {
+                var movieId = $(this).data('movie-id');
+                var movieTitle = $(this).data('movietitle');
+                var movieImage = $(this).find('img').attr('src');
+
+                // Populate the modal
+                $('#movieImage').attr('src', movieImage);
+                $('#movieId').attr('value', movieId);
+                $('#movieModalLabel').text(movieTitle);
+            });
+        });
+    </script>
+}
