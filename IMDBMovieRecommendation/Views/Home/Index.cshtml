@@ -1,14 +1,14 @@
-﻿@model List<ResultMovieDTO>
+﻿@using IMDBMovieRecommendation.Entities
+@model PagedResult<ResultMovieDTO>
+
 @{
-    ViewData["Title"] = "Home Page";
-    int count;
+ViewData["Title"] = "Home Page";
+var TotalPages = (int)Math.Ceiling(Model.TotalCount / (double)Model.PageSize);
+int startPage = Math.Max(1, Model.PageIndex - 2);
+int endPage = Math.Min(TotalPages, Model.PageIndex + 2);
 }
 
 <div class="text-center">
-    <form asp-action="Refresh" asp-controller="Home" method="post">
-        <button type="submit">Yenile</button>
-    </form>
-
     <div class="modal fade" id="movieModal" tabindex="-1" aria-labelledby="movieModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -18,49 +18,163 @@
                 </div>
                 <div class="modal-body">
                     <img src="" id="movieImage" class="img-fluid">
-                    <form>
+                    <div id="movieDescriptionSection" class="my-3 mx-auto">
+                        <span id="movieDescription"></span>
+                    </div>
+                    <div id="movieCommentSection" class="my-3 mx-auto" style="display:none;">
+                        <span id="movieComment"></span>
+                    </div>
+                    <form id="movieForm">
                         <div class="form-floating my-3">
-                            <textarea class="form-control" placeholder="Yorumunuz" id="floatingTextarea"></textarea>
+                            <textarea class="form-control" placeholder="Yorumunuz" id="floatingTextarea" name="Comment"></textarea>
                         </div>
                         <div class="d-grid col-12 mx-auto">
-                            <input type="hidden" id="movieId" value="">
-                            <button class="btn btn-success" type="submit">İzledim</button>
+                            <input type="hidden" name="MovieID" id="movieId" value="">
+                            <button class="btn btn-success" id="submitButton" type="submit">İzledim</button>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
                 </div>
             </div>
         </div>
     </div>
+
     <div class="container mt-5">
         <div class="movies">
-            @foreach (var item in Model)
+            @foreach (var item in Model.Items)
             {
-                <div class="film-poster" data-movie-id="@item.MovieID" data-movietitle="@item.Title">
-                    <div class="badge">@item.Rating</div>
-                    <img src="@item.Image"/>
-                </div>
+            <div class="film-poster @(item.IsWatching ? "bw" : "")"
+                 data-movie-id="@item.MovieID"
+                 data-movie-title="@item.Title"
+                 data-movie-comment="@item.Comment"
+                 data-movie-description="@item.Description"
+                 data-is-watching="@item.IsWatching">
+                <div class="badge">@item.Rating</div>
+                <img src="@item.Image"/>
+            </div>
             }
-        </div >
+        </div>
+        <nav aria-label="Page navigation">
+            <ul class="pagination text-white justify-content-center">
+                <li class="page-item @(Model.PageIndex == 1 ? "disabled" : "")">
+                    <a class="page-link bg-dark text-white border border-dark" href="@Url.Action("Index", new { pageIndex = Model.PageIndex - 1 })">Önceki</a>
+                </li>
+                @if (startPage > 1)
+                {
+                <li class="page-item">
+                    <a class="page-link bg-dark text-white border border-dark" href="@Url.Action("Index", new { pageIndex = 1 })">1</a>
+                </li>
+                @if (startPage > 2)
+                {
+                <li class="page-item disabled">
+                    <a class="page-link bg-dark text-white border border-dark">...</a>
+                </li>
+                }
+                }
+
+                @for (int i = startPage; i <= endPage; i++)
+                {
+                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                    <a class="page-link @(i == Model.PageIndex ? "bg-primary text-white" : "bg-dark text-white") border border-dark" href="@Url.Action("Index", new { pageIndex = i })">@i</a>
+                </li>
+                }
+
+                @if (endPage < TotalPages)
+                {
+                @if (endPage < TotalPages - 1)
+                {
+                <li class="page-item disabled">
+                    <a class="page-link bg-dark text-white border border-dark">...</a>
+                </li>
+                }
+                <li class="page-item">
+                    <a class="page-link bg-dark text-white border border-dark" href="@Url.Action("Index", new { pageIndex = TotalPages })">@TotalPages</a>
+                </li>
+                }
+
+                <li class="page-item @(Model.PageIndex == TotalPages ? "disabled" : "")">
+                    <a class="page-link bg-dark text-white border border-dark" href="@Url.Action("Index", new { pageIndex = Model.PageIndex + 1 })">Sonraki</a>
+                </li>
+            </ul>
+        </nav>
     </div>
-</div >
+</div>
 
 @section Scripts
 {
-    <script>
-        $(document).ready(function() {
-            $('.film-poster').click(function() {
-                var movieId = $(this).data('movie-id');
-                var movieTitle = $(this).data('movietitle');
-                var movieImage = $(this).find('img').attr('src');
+<script>
+    $(document).ready(function () {
+        var selectedMovieElement;
 
-                // Populate the modal
-                $('#movieImage').attr('src', movieImage);
-                $('#movieId').attr('value', movieId);
-                $('#movieModalLabel').text(movieTitle);
+        $('.film-poster').click(function () {
+            selectedMovieElement = $(this);
+            var movieId = selectedMovieElement.data('movie-id');
+            var movieTitle = selectedMovieElement.data('movie-title');
+            var movieImage = selectedMovieElement.find('img').attr('src');
+            var movieComment = selectedMovieElement.data('movie-comment');
+            var movieDescription = selectedMovieElement.data('movie-description');
+            var isWatching = selectedMovieElement.data('is-watching') === "True";
+
+            // Modal içeriği ayarlama
+            $('#movieImage').attr('src', movieImage);
+            $('#movieModalLabel').text(movieTitle);
+            $('#movieId').val(movieId);
+            $('#movieDescription').text(movieDescription);
+
+            if (isWatching) {
+                $('#movieCommentSection').show();
+                $('#movieComment').text(movieComment || 'Henüz yorum yok.');
+                $('#floatingTextarea').hide();
+                $('#submitButton').text('İzlenmeyi Kaldır').removeClass('btn-success').addClass('btn-danger');
+            } else {
+                $('#movieCommentSection').hide();
+                $('#floatingTextarea').show().val(''); // Textarea görünür ve temizlenir
+                $('#submitButton').text('İzledim').removeClass('btn-danger').addClass('btn-success');
+            }
+
+            $('#movieModal').modal('show');
+        });
+
+        $('#movieForm').submit(function (e) {
+            e.preventDefault();
+
+            var movieId = $('#movieId').val();
+            var comment = $('#floatingTextarea').val();
+            var actionUrl = '/Home/isWatchUpdater';
+
+            $.ajax({
+                url: actionUrl,
+                type: 'POST',
+                data: {
+                    MovieID: movieId,
+                    Comment: comment
+                },
+                success: function (response) {
+                    alert("Film başarıyla güncellendi!");
+                    $('#movieModal').modal('hide');
+
+                    if (selectedMovieElement) {
+                        // İzlenme durumu güncelleme
+                        var isWatching = selectedMovieElement.data('is-watching') === "True";
+                        if (isWatching) {
+                            selectedMovieElement.removeClass('bw');
+                            selectedMovieElement.data('is-watching', "False");
+                            selectedMovieElement.data('movie-comment', ''); // Yorum siliniyor
+                        } else {
+                            selectedMovieElement.addClass('bw');
+                            selectedMovieElement.data('is-watching', "True");
+                            selectedMovieElement.data('movie-comment', comment);
+                        }
+                    }
+                    $('#floatingTextarea').val('');
+                },
+                error: function () {
+                    alert("İşlem sırasında bir hata oluştu.");
+                }
             });
         });
-    </script>
+    });
+</script>
 }

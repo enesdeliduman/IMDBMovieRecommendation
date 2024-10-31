@@ -8,4 +8,5 @@ public class CreateMovieDTO
     public string Rating { get; set; }
     public string Year { get; set; }
     public bool IsWatching { get; set; } = false;
+    public string Comment { get; set; } = string.Empty;
 }

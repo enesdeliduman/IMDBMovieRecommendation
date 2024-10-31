@@ -58,22 +58,36 @@ namespace IMDBMovieRecommendation.Controllers
                         count++;
                     }
                 }
+
                 if (count > 0)
                 {
-                    ViewBag.Message = $"Tebrikler. Veritabanınıza {count} yeni film eklendi. Acilen izleyin";
+                    TempData["Message"] = $"Tebrikler. Veritabanınıza {count} yeni film eklendi. Acilen izleyin";
                 }
                 else
                 {
-                    ViewBag.Message = $"Eklenecek yeni bir film bulamadık. Listeniz hala güncel.";
+                    TempData["Message"] = "Eklenecek yeni bir film bulamadık. Listeniz hala güncel.";
                 }
+
+                return RedirectToAction("Index");
             }
+            TempData["Message"] = "API Key'in süresi doldu.";
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int pageIndex = 1, int pageSize = 12)
         {
-            var values = await _movieRepository.GetMovies();
-            return View(values);
+            var pagedMovies = await _movieRepository.GetPagedMovies(pageIndex, pageSize);
+            ViewBag.TotalPages = (int)Math.Ceiling(pagedMovies.TotalCount / (double)pageSize);
+            ViewBag.CurrentPage = pageIndex;
+            return View(pagedMovies);
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> isWatchUpdater(isWatchUpdaterDTO isWatchUpdaterDto)
+        {
+            await _movieRepository.isWatchUpdater(isWatchUpdaterDto);
+            return RedirectToAction("Index");
         }
     }
 }

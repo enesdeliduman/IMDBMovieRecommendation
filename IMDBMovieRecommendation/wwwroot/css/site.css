@@ -37,7 +37,7 @@ body, .modal-content {
 }
 
 .film-poster::before {
-    content: attr(data-movietitle);
+    content: attr(data-movie-title);
     color: white;
     font-weight: 700;
     z-index: 1;
@@ -70,4 +70,45 @@ body, .modal-content {
 
 .bw img {
     filter: grayscale(100%);
+}
+
+.border-dark {
+    border: 1px solid black !important;
+}
+
+footer {
+    background-color: #343a40; 
+    padding: 20px;
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    @media (max-width: 991px) {
+        flex-direction: column;
+        gap: 20px;
+    }
+}
+
+.social-icons {
+    display: flex;
+    justify-content: start;
+    gap: 15px;
+}
+
+.social-icon {
+    color: white; 
+    font-size: 24px; 
+    text-decoration: none;
+}
+
+.social-icon i:hover {
+    color: white; 
+}
+
+.social-icon:hover {
+    color: #007bff;
+}
+
+.alert{
+    border-radius: 0;
 }
